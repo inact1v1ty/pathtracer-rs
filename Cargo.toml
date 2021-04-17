@@ -1,0 +1,10 @@
+[package]
+name = "pathtracer-rs"
+version = "0.1.0"
+authors = ["Nikita Krylov <krylov.nikita.a@yandex.ru>"]
+edition = "2018"
+keywords = ["raytracing", "wgpu"]
+categories = ["graphics"]
+license = "MIT"
+
+[dependencies]
