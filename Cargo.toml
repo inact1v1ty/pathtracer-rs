@@ -7,4 +7,15 @@ keywords = ["raytracing", "wgpu"]
 categories = ["graphics"]
 license = "MIT"
 
+[features]
+optimize = ["log/release_max_level_warn"]
+default = ["optimize"]
+
 [dependencies]
+env_logger = "0.8"
+log = "0.4"
+pixels = "0.2.0"
+winit = "0.24"
+winit_input_helper = "0.9"
+rayon = "1.5.0"
+rand = "0.8.3"
