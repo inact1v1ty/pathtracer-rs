@@ -1,3 +1,5 @@
+use crate::aabb::Aabb;
+use crate::iter_util::IteratorExt;
 use crate::material::MaterialHandle;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
@@ -12,7 +14,8 @@ pub struct HitRecord {
 }
 
 pub trait Hitable {
-    fn hit(&self, t_min: f32, t_max: f32, ray: &Ray) -> Option<HitRecord>;
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
+    fn bounding_box(&self, t0: f32, t1: f32) -> Option<Aabb>;
 }
 
 pub type HitableHandle = Box<dyn Hitable + Send + Sync>;
@@ -21,13 +24,13 @@ impl<T> Hitable for Vec<T>
 where
     T: Hitable,
 {
-    fn hit(&self, t_min: f32, t_max: f32, ray: &Ray) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let (hit, _) = self.iter().fold(
             (None, t_max),
             |(res, closest_so_far): (Option<HitRecord>, f32), h| match h.hit(
+                ray,
                 t_min,
                 closest_so_far,
-                ray,
             ) {
                 Some(hit_record) => {
                     let t = hit_record.t;
@@ -38,8 +41,15 @@ where
         );
         hit
     }
+
+    fn bounding_box(&self, t0: f32, t1: f32) -> Option<Aabb> {
+        self.iter()
+            .map(|h| h.bounding_box(t0, t1))
+            .try_reduce(Aabb::merge)
+    }
 }
 
+#[derive(Clone)]
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
@@ -48,7 +58,7 @@ pub struct Sphere {
 
 impl Hitable for Sphere {
     #[allow(clippy::suspicious_operation_groupings)]
-    fn hit(&self, t_min: f32, t_max: f32, ray: &Ray) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let oc = ray.origin - self.center;
         let a = Vec3::dot(ray.direction, ray.direction);
         let b = Vec3::dot(oc, ray.direction);
@@ -76,5 +86,12 @@ impl Hitable for Sphere {
         }
 
         None
+    }
+
+    fn bounding_box(&self, _t0: f32, _t1: f32) -> Option<Aabb> {
+        Some(Aabb {
+            min: self.center - Vec3::new(self.radius, self.radius, self.radius),
+            max: self.center + Vec3::new(self.radius, self.radius, self.radius),
+        })
     }
 }

@@ -1,5 +1,5 @@
 #![deny(clippy::all)]
-#![forbid(unsafe_code)]
+//#![forbid(unsafe_code)]
 #![allow(clippy::many_single_char_names)]
 #![allow(dead_code)]
 #![allow(clippy::identity_op)]
@@ -17,8 +17,11 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
+mod aabb;
+mod bvh;
 mod camera;
 mod hit;
+mod iter_util;
 mod material;
 mod ray;
 mod render;
@@ -26,6 +29,7 @@ mod tracer;
 mod util;
 mod vec3;
 
+use bvh::BvhNode;
 use camera::Camera;
 use hit::{HitableHandle, Sphere};
 use material::{Dielectric, Lambertian, MaterialHandle, Metal};
@@ -92,7 +96,7 @@ fn main() -> Result<(), Error> {
 
         println!("Started rendering");
         let start = std::time::Instant::now();
-        tracer_clone.render(100);
+        tracer_clone.render(1000);
         save_screenshot(&tracer_clone);
         println!("Rendering complete, took {:?}", start.elapsed());
     });
@@ -142,15 +146,15 @@ fn save_screenshot(tracer: &Tracer) {
 fn random_scene() -> HitableHandle {
     let mut rng = rand::thread_rng();
 
-    let mut world = Box::new(Vec::with_capacity(500));
+    let mut world: Vec<Arc<HitableHandle>> = Vec::with_capacity(500);
 
-    world.push(Sphere {
+    world.push(Arc::new(Box::new(Sphere {
         center: Vec3::new(0.0, -1000.0, -1.0),
         radius: 1000.0,
         material: Arc::new(Box::new(Lambertian {
             albedo: Vec3::new(0.5, 0.5, 0.5),
         })),
-    });
+    })));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -190,36 +194,36 @@ fn random_scene() -> HitableHandle {
                     }));
                 }
 
-                world.push(Sphere {
+                world.push(Arc::new(Box::new(Sphere {
                     center,
                     radius: 0.2,
                     material,
-                });
+                })));
             }
         }
     }
-    world.push(Sphere {
+    world.push(Arc::new(Box::new(Sphere {
         center: Vec3::new(0.0, 1.0, 0.0),
         radius: 1.0,
         material: Arc::new(Box::new(Dielectric {
             refraction_idx: 1.5,
         })),
-    });
-    world.push(Sphere {
+    })));
+    world.push(Arc::new(Box::new(Sphere {
         center: Vec3::new(-4.0, 1.0, 0.0),
         radius: 1.0,
         material: Arc::new(Box::new(Lambertian {
             albedo: Vec3::new(0.4, 0.2, 0.1),
         })),
-    });
-    world.push(Sphere {
+    })));
+    world.push(Arc::new(Box::new(Sphere {
         center: Vec3::new(4.0, 1.0, 0.0),
         radius: 1.0,
         material: Arc::new(Box::new(Metal {
             albedo: Vec3::new(0.7, 0.6, 0.5),
             fuzz: 0.0,
         })),
-    });
+    })));
 
-    world
+    Box::new(BvhNode::new(&mut world[..], 0.0, 0.0))
 }

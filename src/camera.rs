@@ -1,6 +1,7 @@
 use crate::ray::Ray;
 use crate::vec3::Vec3;
 
+use crate::util::local_rng;
 use rand::Rng;
 
 #[derive(Debug, Clone)]
@@ -61,7 +62,7 @@ impl Camera {
 }
 
 pub fn random_in_unit_disk() -> Vec3 {
-    let mut rng = rand::thread_rng();
+    let mut rng = local_rng();
     let mut p: Vec3;
     loop {
         p = Vec3::new(rng.gen_range(-1.0..=1.0), rng.gen_range(-1.0..=1.0), 0.0);

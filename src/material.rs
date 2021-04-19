@@ -58,7 +58,7 @@ pub struct Dielectric {
 impl Material for Dielectric {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Ray, Vec3)> {
         assert_ne!(self.refraction_idx, 0.0);
-        let mut rng = rand::thread_rng();
+        let mut rng = util::local_rng();
 
         let reflected = reflect(ray.direction, hit.normal);
 

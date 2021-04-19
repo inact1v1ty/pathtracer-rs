@@ -18,5 +18,8 @@ pixels = "0.2.0"
 winit = "0.24"
 winit_input_helper = "0.9"
 rayon = "1.5.0"
-rand = "0.8.3"
+rand = { version = "0.8.3", features=["small_rng"] }
 image = "0.23.14"
+
+[profile.release] 
+debug = true

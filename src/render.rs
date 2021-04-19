@@ -1,6 +1,7 @@
 use crate::hit::HitableHandle;
 use crate::ray::Ray;
 use crate::tracer::Tracer;
+use crate::util::local_rng;
 use crate::vec3::Vec3;
 
 use rand::Rng;
@@ -8,7 +9,7 @@ use rand::Rng;
 impl Tracer {
     #[allow(clippy::let_and_return)]
     pub(crate) fn trace(&self, x: u32, y: u32, steps: u32) -> Vec3 {
-        let mut rng = rand::thread_rng();
+        let mut rng = local_rng();
 
         let mut color = Vec3::zero();
 
@@ -28,7 +29,7 @@ impl Tracer {
     }
 
     fn color(ray: Ray, hitable: &HitableHandle, depth: u32) -> Vec3 {
-        match hitable.hit(0.001, f32::MAX, &ray) {
+        match hitable.hit(&ray, 0.001, f32::MAX) {
             Some(hit) => {
                 if depth >= 50 {
                     Vec3::zero()

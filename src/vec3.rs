@@ -7,6 +7,13 @@ pub struct Vec3 {
     pub z: f32,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Axis {
+    X,
+    Y,
+    Z,
+}
+
 impl Vec3 {
     #[inline]
     pub fn new(x: f32, y: f32, z: f32) -> Self {
@@ -66,6 +73,17 @@ impl ops::Index<u32> for Vec3 {
             1 => &self.y,
             2 => &self.z,
             _ => panic!("Index out of range for (x, y, z)"),
+        }
+    }
+}
+
+impl ops::Index<Axis> for Vec3 {
+    type Output = f32;
+    fn index(&self, axis: Axis) -> &f32 {
+        match axis {
+            Axis::X => &self.x,
+            Axis::Y => &self.y,
+            Axis::Z => &self.z,
         }
     }
 }
