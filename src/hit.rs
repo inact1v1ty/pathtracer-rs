@@ -1,18 +1,22 @@
+
+use std::sync::Arc;
 use crate::vec3::Vec3;
 use crate::ray::Ray;
+use crate::material::MaterialHandle;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone)]
 pub struct HitRecord {
     pub t: f32,
     pub point: Vec3,
     pub normal: Vec3,
+    pub material: Arc<MaterialHandle>,
 }
 
 pub trait Hitable {
     fn hit(&self, t_min: f32, t_max: f32, ray: &Ray) -> Option<HitRecord>;
 }
 
-pub type HitableHolder = Box<dyn Hitable + Sync + Send>;
+pub type HitableHandle = Box<dyn Hitable + Send + Sync>;
 
 impl<T> Hitable for Vec<T>
 where
@@ -22,7 +26,10 @@ where
         let (hit, _) = self.iter()
             .fold((None, t_max), |(res, closest_so_far): (Option<HitRecord>, f32), h| {
                 match h.hit(t_min, closest_so_far, ray) {
-                    Some(hit_record) => (Some(hit_record), hit_record.t),
+                    Some(hit_record) => { 
+                        let t = hit_record.t;
+                        (Some(hit_record), t)
+                    },
                     None => (res, closest_so_far)
                 }
             });
@@ -34,6 +41,7 @@ where
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
+    pub material: Arc<MaterialHandle>,
 }
 
 impl Hitable for Sphere {
@@ -50,7 +58,8 @@ impl Hitable for Sphere {
                 return Some(HitRecord {
                     t: temp,
                     point: ray.point_at(temp),
-                    normal: (ray.point_at(temp) - self.center) / self.radius
+                    normal: (ray.point_at(temp) - self.center) / self.radius,
+                    material: self.material.clone(),
                 })
             }
             
@@ -59,7 +68,8 @@ impl Hitable for Sphere {
                 return Some(HitRecord {
                     t: temp,
                     point: ray.point_at(temp),
-                    normal: (ray.point_at(temp) - self.center) / self.radius
+                    normal: (ray.point_at(temp) - self.center) / self.radius,
+                    material: self.material.clone(),
                 })
             }
         }

@@ -3,23 +3,25 @@ use std::convert::TryInto;
 
 use rayon::prelude::*;
 
-use crate::hit::HitableHolder;
+use crate::hit::HitableHandle;
+use crate::camera::Camera;
 
 pub struct Tracer {
     pub(crate) width: u32,
     pub(crate) height: u32,
     pub(crate) block_size: u32,
     buffer: Mutex<Vec<u8>>,
-    pub(crate) world: HitableHolder,
+    pub(crate) world: HitableHandle,
+    pub(crate) camera: Camera,
 }
 
 impl Tracer {
-    pub fn new(width: u32, height: u32, block_size: u32, world: HitableHolder) -> Self {
+    pub fn new(width: u32, height: u32, block_size: u32, world: HitableHandle, camera: Camera) -> Self {
         assert_eq!(width % block_size, 0);
         assert_eq!(height % block_size, 0);
 
         let buffer = Mutex::new(vec![0; (width * height * 4).try_into().unwrap()]);
-        Tracer { width, height, block_size, buffer, world }
+        Tracer { width, height, block_size, buffer, world, camera }
     }
 
     pub fn flush(&self, frame: &mut [u8]) {

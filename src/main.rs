@@ -4,6 +4,7 @@
 #![allow(dead_code)]
 #![allow(clippy::identity_op)]
 
+use std::convert::TryInto;
 use std::thread;
 use std::sync::Arc;
 use log::error;
@@ -13,6 +14,8 @@ use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
+use rand::Rng;
+use image::RgbaImage;
 
 mod vec3;
 mod ray;
@@ -20,10 +23,14 @@ mod tracer;
 mod render;
 mod hit;
 mod camera;
+mod material;
+mod util;
 
 use vec3::Vec3;
 use tracer::Tracer;
-use hit::{HitableHolder, Sphere};
+use hit::{HitableHandle, Sphere};
+use material::{MaterialHandle, Lambertian, Metal, Dielectric};
+use camera::Camera;
 
 const DOWNSCALE: u32 = 1;
 const WIDTH: u32 = 1280 / DOWNSCALE;
@@ -52,20 +59,27 @@ fn main() -> Result<(), Error> {
         Pixels::new(WIDTH, HEIGHT, surface_texture)?
     };
 
-    let world: HitableHolder = Box::new(vec![
-        Sphere { center: Vec3::new(0.0, 0.0, -1.0), radius: 0.5 },
-        Sphere { center: Vec3::new(0.0, -100.5, -1.0), radius: 100.0 },
-    ]);
+    let world: HitableHandle = random_scene();
 
-    let tracer = Arc::new(Tracer::new(WIDTH, HEIGHT, BLOCK_SIZE, world));
+    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
+    let aspect_ratio = WIDTH as f32 / HEIGHT as f32;
+    let focus_dist = 10.0;
+    let aperture = 0.1;
+    let camera = Camera::new(look_from, look_at, Vec3::new(0.0, 1.0, 0.0), 20.0, aspect_ratio, focus_dist, aperture);
+
+    let tracer = Arc::new(Tracer::new(WIDTH, HEIGHT, BLOCK_SIZE, world, camera));
 
     let tracer_clone = tracer.clone();
 
     thread::spawn(move || {
         tracer_clone.render(1);
+        save_screenshot(&tracer_clone);
+
         println!("Started rendering");
         let start = std::time::Instant::now();
         tracer_clone.render(100);
+        save_screenshot(&tracer_clone);
         println!("Rendering complete, took {:?}", start.elapsed());
     });
 
@@ -100,4 +114,85 @@ fn main() -> Result<(), Error> {
             window.request_redraw();
         }
     });
+}
+
+fn save_screenshot(tracer: &Tracer) {
+    let mut buf = vec![0; (WIDTH * HEIGHT * 4).try_into().unwrap()];
+    tracer.flush(&mut buf);
+
+    let img = RgbaImage::from_vec(WIDTH, HEIGHT, buf).unwrap();
+
+    img.save("renders/render.png").unwrap();
+}
+
+fn random_scene() -> HitableHandle {
+    let mut rng = rand::thread_rng();
+
+    let mut world = Box::new(Vec::with_capacity(500));
+
+    world.push(Sphere {
+        center: Vec3::new(0.0, -1000.0, -1.0),
+        radius: 1000.0,
+        material: Arc::new(Box::new(Lambertian { albedo: Vec3::new(0.5, 0.5, 0.5) }))
+    });
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = rng.gen_range(0.0..1.0);
+            let center = Vec3::new(a as f32 + 0.9 * rng.gen_range(0.0..1.0), 0.2, b as f32 + 0.9 * rng.gen_range(0.0..1.0));
+
+            if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                let material: Arc<MaterialHandle>;
+
+                if choose_mat < 0.8 { // diffuse
+                    material = Arc::new(Box::new(Lambertian {
+                        albedo: Vec3::new(
+                            rng.gen_range(0.0..1.0) * rng.gen_range(0.0..1.0),
+                            rng.gen_range(0.0..1.0) * rng.gen_range(0.0..1.0),
+                            rng.gen_range(0.0..1.0) * rng.gen_range(0.0..1.0)
+                        )
+                    }));
+                } else if choose_mat < 0.95 { // metal
+                    material = Arc::new(Box::new(Metal {
+                        albedo: Vec3::new(
+                            0.5 * (1.0 + rng.gen_range(0.0..1.0)),
+                            0.5 * (1.0 + rng.gen_range(0.0..1.0)),
+                            0.5 * (1.0 + rng.gen_range(0.0..1.0))
+                        ),
+                        fuzz: 0.5 * rng.gen_range(0.0..1.0)
+                    }));
+                } else { // glass
+                    material = Arc::new(Box::new(Dielectric {
+                        refraction_idx: 1.5
+                    }));
+                }
+
+                world.push(Sphere {
+                    center,
+                    radius: 0.2,
+                    material
+                });
+            }
+        }
+    }
+    
+    world.push(Sphere {
+        center: Vec3::new(0.0, 1.0, 0.0),
+        radius: 1.0,
+        material: Arc::new(Box::new(Dielectric { refraction_idx: 1.5 }))
+    });
+    
+    world.push(Sphere {
+        center: Vec3::new(-4.0, 1.0, 0.0),
+        radius: 1.0,
+        material: Arc::new(Box::new(Lambertian { albedo: Vec3::new(0.4, 0.2, 0.1) }))
+    });
+    
+    world.push(Sphere {
+        center: Vec3::new(4.0, 1.0, 0.0),
+        radius: 1.0,
+        material: Arc::new(Box::new(Metal { albedo: Vec3::new(0.7, 0.6, 0.5), fuzz: 0.0 }))
+    });
+
+    world
 }
