@@ -12,17 +12,22 @@ impl Vec3 {
     pub fn new(x: f32, y: f32, z: f32) -> Self {
         Vec3 { x, y, z }
     }
-    
     #[inline]
     pub fn zero() -> Self {
-        Vec3 { x: 0.0, y: 0.0, z: 0.0 }
+        Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
-    
     #[inline]
     pub fn one() -> Self {
-        Vec3 { x: 1.0, y: 1.0, z: 1.0 }
+        Vec3 {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        }
     }
-    
     #[inline]
     pub fn length(self) -> f32 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
@@ -48,7 +53,19 @@ impl Vec3 {
         Vec3 {
             x: left.y * right.z - left.z * right.y,
             y: -(left.x * right.z - left.z * right.x),
-            z: left.x * right.y - left.y * right.x
+            z: left.x * right.y - left.y * right.x,
+        }
+    }
+}
+
+impl ops::Index<u32> for Vec3 {
+    type Output = f32;
+    fn index(&self, idx: u32) -> &f32 {
+        match idx {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Index out of range for (x, y, z)"),
         }
     }
 }
@@ -61,7 +78,7 @@ impl ops::Add for Vec3 {
         Vec3 {
             x: self.x + other.x,
             y: self.y + other.y,
-            z: self.z + other.z
+            z: self.z + other.z,
         }
     }
 }
@@ -83,7 +100,7 @@ impl ops::Sub for Vec3 {
         Vec3 {
             x: self.x - other.x,
             y: self.y - other.y,
-            z: self.z - other.z
+            z: self.z - other.z,
         }
     }
 }
@@ -105,7 +122,7 @@ impl ops::Neg for Vec3 {
         Vec3 {
             x: -self.x,
             y: -self.y,
-            z: -self.z
+            z: -self.z,
         }
     }
 }
@@ -118,7 +135,7 @@ impl ops::Mul<f32> for Vec3 {
         Vec3 {
             x: self.x * scale,
             y: self.y * scale,
-            z: self.z * scale
+            z: self.z * scale,
         }
     }
 }
@@ -131,7 +148,7 @@ impl ops::Mul<Vec3> for f32 {
         Vec3 {
             x: v.x * self,
             y: v.y * self,
-            z: v.z * self
+            z: v.z * self,
         }
     }
 }
@@ -153,7 +170,7 @@ impl ops::Div<f32> for Vec3 {
         Vec3 {
             x: self.x / scale,
             y: self.y / scale,
-            z: self.z / scale
+            z: self.z / scale,
         }
     }
 }
@@ -175,7 +192,7 @@ impl ops::Mul for Vec3 {
         Vec3 {
             x: self.x * other.x,
             y: self.y * other.y,
-            z: self.z * other.z
+            z: self.z * other.z,
         }
     }
 }
@@ -197,7 +214,7 @@ impl ops::Div for Vec3 {
         Vec3 {
             x: self.x / other.x,
             y: self.y / other.y,
-            z: self.z / other.z
+            z: self.z / other.z,
         }
     }
 }

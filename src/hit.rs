@@ -1,8 +1,7 @@
-
-use std::sync::Arc;
-use crate::vec3::Vec3;
-use crate::ray::Ray;
 use crate::material::MaterialHandle;
+use crate::ray::Ray;
+use crate::vec3::Vec3;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct HitRecord {
@@ -20,20 +19,23 @@ pub type HitableHandle = Box<dyn Hitable + Send + Sync>;
 
 impl<T> Hitable for Vec<T>
 where
-    T: Hitable {
-
+    T: Hitable,
+{
     fn hit(&self, t_min: f32, t_max: f32, ray: &Ray) -> Option<HitRecord> {
-        let (hit, _) = self.iter()
-            .fold((None, t_max), |(res, closest_so_far): (Option<HitRecord>, f32), h| {
-                match h.hit(t_min, closest_so_far, ray) {
-                    Some(hit_record) => { 
-                        let t = hit_record.t;
-                        (Some(hit_record), t)
-                    },
-                    None => (res, closest_so_far)
+        let (hit, _) = self.iter().fold(
+            (None, t_max),
+            |(res, closest_so_far): (Option<HitRecord>, f32), h| match h.hit(
+                t_min,
+                closest_so_far,
+                ray,
+            ) {
+                Some(hit_record) => {
+                    let t = hit_record.t;
+                    (Some(hit_record), t)
                 }
-            });
-        
+                None => (res, closest_so_far),
+            },
+        );
         hit
     }
 }
@@ -60,9 +62,8 @@ impl Hitable for Sphere {
                     point: ray.point_at(temp),
                     normal: (ray.point_at(temp) - self.center) / self.radius,
                     material: self.material.clone(),
-                })
+                });
             }
-            
             let temp = (-b + discriminant.sqrt()) / a;
             if temp > t_min && temp < t_max {
                 return Some(HitRecord {
@@ -70,7 +71,7 @@ impl Hitable for Sphere {
                     point: ray.point_at(temp),
                     normal: (ray.point_at(temp) - self.center) / self.radius,
                     material: self.material.clone(),
-                })
+                });
             }
         }
 

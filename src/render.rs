@@ -1,8 +1,7 @@
-
-use crate::vec3::Vec3;
+use crate::hit::HitableHandle;
 use crate::ray::Ray;
 use crate::tracer::Tracer;
-use crate::hit::HitableHandle;
+use crate::vec3::Vec3;
 
 use rand::Rng;
 
@@ -44,5 +43,5 @@ impl Tracer {
                 (1.0 - t) * Vec3::one() + t * Vec3::new(0.5, 0.7, 1.0)
             }
         }
-    }   
+    }
 }

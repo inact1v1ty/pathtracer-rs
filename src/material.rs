@@ -1,8 +1,7 @@
-
-use crate::vec3::Vec3;
-use crate::ray::Ray;
 use crate::hit::HitRecord;
+use crate::ray::Ray;
 use crate::util;
+use crate::vec3::Vec3;
 
 use rand::Rng;
 
@@ -19,7 +18,13 @@ pub struct Lambertian {
 impl Material for Lambertian {
     fn scatter(&self, _ray: &Ray, hit: &HitRecord) -> Option<(Ray, Vec3)> {
         let target = hit.point + hit.normal + util::random_in_unit_sphere();
-        Some((Ray { origin: hit.point, direction: target - hit.point }, self.albedo))
+        Some((
+            Ray {
+                origin: hit.point,
+                direction: target - hit.point,
+            },
+            self.albedo,
+        ))
     }
 }
 
@@ -33,7 +38,13 @@ impl Material for Metal {
         let fuzz = if self.fuzz < 1.0 { self.fuzz } else { 1.0 };
         let reflected = reflect(ray.direction.unit(), hit.normal);
         if Vec3::dot(reflected, hit.normal) > 0.0 {
-            Some((Ray { origin: hit.point, direction: reflected + util::random_in_unit_sphere() * fuzz }, self.albedo))
+            Some((
+                Ray {
+                    origin: hit.point,
+                    direction: reflected + util::random_in_unit_sphere() * fuzz,
+                },
+                self.albedo,
+            ))
         } else {
             None
         }
@@ -52,16 +63,30 @@ impl Material for Dielectric {
         let reflected = reflect(ray.direction, hit.normal);
 
         let (outward_normal, ni_over_nt, cosine) = if Vec3::dot(ray.direction, hit.normal) > 0.0 {
-            (-hit.normal, self.refraction_idx, self.refraction_idx * Vec3::dot(ray.direction, hit.normal) / ray.direction.length())
+            (
+                -hit.normal,
+                self.refraction_idx,
+                self.refraction_idx * Vec3::dot(ray.direction, hit.normal) / ray.direction.length(),
+            )
         } else {
-            (hit.normal, 1.0 / self.refraction_idx, - Vec3::dot(ray.direction, hit.normal) / ray.direction.length())
+            (
+                hit.normal,
+                1.0 / self.refraction_idx,
+                -Vec3::dot(ray.direction, hit.normal) / ray.direction.length(),
+            )
         };
 
         let direction = refract(ray.direction, outward_normal, ni_over_nt)
-            .filter(|_| { rng.gen_range(0.0..1.0) > schlick(cosine, self.refraction_idx) })
+            .filter(|_| rng.gen_range(0.0..1.0) > schlick(cosine, self.refraction_idx))
             .unwrap_or(reflected);
 
-        Some((Ray { origin: hit.point, direction }, Vec3::one()))
+        Some((
+            Ray {
+                origin: hit.point,
+                direction,
+            },
+            Vec3::one(),
+        ))
     }
 }
 
